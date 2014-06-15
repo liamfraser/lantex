@@ -9,12 +9,28 @@ class LantexBase(object):
         out = "{0} {1}:\n".format(type(self).__name__, self.identifier)
 
         for p in self.properties:
-            out += "{0}: {1}\n".format(p, getattr(self, p))
+            val = getattr(self, p)
+            if val != None:
+                out += "{0}: {1}\n".format(p, val)
 
         return out + "\n"
 
     def valid_property(self, p):
         return p in self.properties
+
+class Addressable(LantexBase):
+    def __init__(self):
+        super().__init__()
+
+        self.v4 = None
+        self.v6 = None
+        self.v4_gateway = None
+        self.v6_gateway = None
+
+        self.properties.append('v4')
+        self.properties.append('v6')
+        self.properties.append('v4_gateway')
+        self.properties.append('v6_gateway')
 
 class Port(LantexBase):
     def __init__(self, index):
@@ -27,7 +43,7 @@ class Port(LantexBase):
         self.properties.append('vlans')
         self.properties.append('pvid')
 
-class Switch(LantexBase):
+class Switch(Addressable):
     def __init__(self):
         super().__init__()
 
@@ -86,19 +102,22 @@ class Switch(LantexBase):
             if p.pvid == None:
                 p.pvid = pvid
 
-class AccessPoint(LantexBase):
+class AccessPoint(Addressable):
     def __init__(self):
         super().__init__()
 
-class Network(LantexBase):
+class Network(Addressable):
     def __init__(self):
         super().__init__()
 
-class Tunnel(LantexBase):
+        self.vlan = None
+        self.properties.append('vlan')
+
+class Tunnel(Addressable):
     def __init__(self):
         super().__init__()
 
-class Host(LantexBase):
+class Host(Addressable):
     def __init__(self):
         super().__init__()
 

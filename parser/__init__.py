@@ -12,8 +12,6 @@ from __future__ import print_function, division, absolute_import, unicode_litera
 from grako.parsing import *  # noqa
 from grako.exceptions import *  # noqa
 from lantex import types
-from copy import deepcopy
-import itertools
 
 __version__ = '14.166.15.04.23'
 
@@ -360,6 +358,15 @@ class lantexSemantics(object):
         print(self.last_istring)
         print(self.entities)
 
+    @staticmethod
+    def flatten(container):
+        for i in container:
+            if isinstance(i, list) or isinstance(i, tuple):
+                for j in lantexSemantics.flatten(i):
+                    yield j
+            else:
+                yield i
+
     def lower_letter(self, ast):
         return ast
 
@@ -406,7 +413,7 @@ class lantexSemantics(object):
         return ast
 
     def primitive(self, ast):
-        pstring = "".join(itertools.chain(*ast))
+        pstring = "".join(self.flatten(ast))
 
         if pstring in types.primitives:
             new_prim = types.primitives[pstring]()
@@ -419,8 +426,7 @@ class lantexSemantics(object):
         Identifier matches most text assign types so need to be careful
         """
 
-        old_ast = deepcopy(ast)
-        istring = "".join(itertools.chain(*ast))
+        istring = "".join(self.flatten(ast))
 
         # If the latest thing in the entity list is a primitive without an
         # identifier, then set one.
@@ -471,7 +477,7 @@ class lantexSemantics(object):
         astring = None
 
         if self.last_istring != None:
-            astring = "".join(itertools.chain(*ast))
+            astring = "".join(self.flatten(ast))
             setattr(self.entities[-1], self.last_istring, astring) 
             # Reset last istring
             self.last_istring = None
