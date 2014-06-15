@@ -40,7 +40,7 @@ connection = identifier arrow numbers ;
 
 colon = ':' ;
 next = ',' [nline];
-map_entry = spaces numbers spaces colon spaces (connection | atype) spaces;
+map_entry = spaces (numbers | identifier) spaces colon spaces (connection | atype) spaces;
 map = lbrace {map_entry next}* map_entry rbrace;
 
 section_statement = spaces (value_assignment | access_assign | tunnel_route) spaces {nline | spaces}+ ;

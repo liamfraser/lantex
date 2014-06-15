@@ -268,7 +268,13 @@ class lantexParser(Parser):
     @rule_def
     def _map_entry_(self):
         self._spaces_()
-        self._numbers_()
+        with self._group():
+            with self._choice():
+                with self._option():
+                    self._numbers_()
+                with self._option():
+                    self._identifier_()
+                self._error('no available options')
         self._spaces_()
         self._colon_()
         self._spaces_()
