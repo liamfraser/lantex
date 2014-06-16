@@ -13,7 +13,7 @@ from grako.parsing import *  # noqa
 from grako.exceptions import *  # noqa
 
 
-__version__ = '14.167.11.46.51'
+__version__ = '14.167.12.40.55'
 
 
 class lantexParser(Parser):
@@ -162,7 +162,7 @@ class lantexParser(Parser):
 
     @rule_def
     def _ip4_(self):
-        self._pattern(r'\b(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\b')
+        self._pattern(r'(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)')
 
     @rule_def
     def _ip6_(self):
