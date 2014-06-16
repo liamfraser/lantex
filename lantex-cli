@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 
 from lantex import types
-import parser
+from parser import LantexParser
 
 if __name__ == "__main__":
-    entities = parser.main('/home/liam/Documents/lantex/test.lan', 'start', trace=False)
-    print(entities)
+    p = LantexParser('/home/liam/Documents/lantex/test.lan', trace=False)
+    p.parse()
+    print(p.entities)

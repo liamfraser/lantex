@@ -110,8 +110,21 @@ class Network(Addressable):
     def __init__(self):
         super().__init__()
 
-        self.vlan = None
+        self._vlan = None
         self.properties.append('vlan')
+
+    @property
+    def vlan(self):
+        return self._vlan
+
+    @vlan.setter
+    def vlan(self, number):
+        try:
+            number = int(number)
+        except:
+            raise ValueError("Can't convert vlan number {0} to an int".format(number))
+
+        self._vlan = number
 
 class Tunnel(Addressable):
     def __init__(self):
