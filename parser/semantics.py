@@ -7,9 +7,13 @@ class lantexSemantics(object):
         self.last_istring = None
 
     def fail(self, error):
-        print(error)
-        print(self.last_istring)
-        print(self.entities)
+        """
+        Used for debugging
+        """
+
+        print("fail: {0}".format(error))
+        print("last istring: {0}".format(self.last_istring))
+        print("entities: {0}".format(self.entities))
 
     @staticmethod
     def flatten(container):
@@ -28,6 +32,8 @@ class lantexSemantics(object):
             self.entities.append(new_prim)
         else:
             self.fail("{0} is not a valid type".format(pstring))
+
+        return ast
 
     def identifier(self, ast):
         """
@@ -56,6 +62,8 @@ class lantexSemantics(object):
         else:
             self.fail("Unsure what to do with identifier {0}".format(istring))
 
+        return ast
+
     def atype(self, ast):
         # We have found a value that needs to be assigned to something so
         # assign it to the last property if we have one. Otherwise fail.
@@ -75,3 +83,9 @@ class lantexSemantics(object):
 
         else:
             self.fail("Unsure what to do with assign type {0}".format(astring))
+
+        return ast
+
+    def map(self, ast):
+        self.fail("Found a map!")
+        self.fail(ast)
