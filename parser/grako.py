@@ -13,7 +13,7 @@ from grako.parsing import *  # noqa
 from grako.exceptions import *  # noqa
 
 
-__version__ = '14.167.12.40.55'
+__version__ = '14.172.15.30.20'
 
 
 class lantexParser(Parser):
@@ -134,7 +134,7 @@ class lantexParser(Parser):
                 self._token(' ')
             with self._option():
                 self._token('\t')
-            self._error('expecting one of:   \t')
+            self._error('expecting one of: \t  ')
 
     @rule_def
     def _spaces_(self):
@@ -144,13 +144,17 @@ class lantexParser(Parser):
         self._closure(block0)
 
     @rule_def
-    def _section_(self):
+    def _section_start_(self):
         self._primitive_()
         self._space_()
         self._identifier_()
         with self._optional():
             self._space_()
         self._lbrace_()
+
+    @rule_def
+    def _section_(self):
+        self._section_start_()
         with self._optional():
             self._nline_()
         self._section_statements_()
@@ -407,6 +411,9 @@ class lantexSemantics(object):
         return ast
 
     def spaces(self, ast):
+        return ast
+
+    def section_start(self, ast):
         return ast
 
     def section(self, ast):
