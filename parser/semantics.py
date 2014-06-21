@@ -1,22 +1,27 @@
 from grako.exceptions import *  # noqa
 from lantex import types
-
+import logging
 class lantexSemantics(object):
+
+
     def __init__(self):
+        logging.basicConfig(level=logging.INFO)
+        self.logger = logging.getLogger(__name__)
         self.entities = []
-        self.last_istring = None
+        self.stack = []
 
     def fail(self, error):
         """
         Used for debugging
         """
 
-        print("fail: {0}".format(error))
-        print("last istring: {0}".format(self.last_istring))
-        print("entities: {0}".format(self.entities))
+        self.logger.error("fail: {0}".format(error))
+        self.logger.error("stack: {0}".format(self.stack))
+        self.logger.error("entities: {0}".format(self.entities))
+        raise ValueError(error)
 
     @staticmethod
-    def flatten(container):
+    def _flatten_itr(container):
         for i in container:
             if isinstance(i, list) or isinstance(i, tuple):
                 for j in lantexSemantics.flatten(i):
@@ -24,68 +29,93 @@ class lantexSemantics(object):
             else:
                 yield i
 
-    def primitive(self, ast):
-        pstring = "".join(self.flatten(ast))
+    @staticmethod
+    def flatten(container):
+        return "".join(lantexSemantics._flatten_itr(container))
 
-        if pstring in types.primitives:
-            new_prim = types.primitives[pstring]()
-            self.entities.append(new_prim)
+    def set_prop(self, prop, value):
+        # Assign the value to the newest entity
+        if prop in self.entities[-1].properties:
+            setattr(self.entities[-1], prop, value)
         else:
-            self.fail("{0} is not a valid type".format(pstring))
+            self.fail("Unknown property {0} for "
+                      "entity {1}".format(prop, self.entities[-1]))
 
+        self.logger.info("Updated: {0}".format(self.entities[-1]))
+
+    def value_assignment(self, ast):
+        if len(self.stack) == 0:
+            # We get to this state when we've just added a map
+            self.logger.info("Should have just added a map."
+                             " Empty value assignment")
+            return
+
+        value = self.stack.pop()
+        prop = self.stack.pop()
+        self.logger.info("Found a value assignment. "
+                         "Property: {0}, Value: {1}".format(prop, value))
+
+        self.set_prop(prop, value)
+        return ast
+
+    def primitive(self, ast):
+        self.stack.append(self.flatten(ast))
         return ast
 
     def identifier(self, ast):
         """
         Identifier matches most text assign types so need to be careful
         """
-
-        istring = "".join(self.flatten(ast))
-
-        # If the latest thing in the entity list is a primitive without an
-        # identifier, then set one.
-        if self.entities[-1].identifier == None:
-            self.entities[-1].identifier = istring
-       
-        # If it's not an identifier for a new entity, then it might be a property
-        # of the entity which will be set once we have the value
-        elif self.entities[-1].valid_property(istring) and self.last_istring == None:
-            self.last_istring = istring
-
-        # We have found a value that needs to be assigned to something so
-        # assign it to the last property if we have one. Otherwise fail.
-        elif self.last_istring != None:
-            setattr(self.entities[-1], self.last_istring, istring) 
-            # Reset last istring
-            self.last_istring = None
-        
-        else:
-            self.fail("Unsure what to do with identifier {0}".format(istring))
-
+        self.stack.append(self.flatten(ast))
         return ast
 
-    def atype(self, ast):
-        # We have found a value that needs to be assigned to something so
-        # assign it to the last property if we have one. Otherwise fail.
-
-        astring = None
-
-        if self.last_istring != None:
-            astring = "".join(self.flatten(ast))
-            setattr(self.entities[-1], self.last_istring, astring) 
-            # Reset last istring
-            self.last_istring = None
-        
-        elif self.last_istring == None:
-            # No idea how we get here but we do. We don't have anything to assign
-            # an assign type to so do nothing. Seems to be when ast == None
-            pass
-
-        else:
-            self.fail("Unsure what to do with assign type {0}".format(astring))
-
+    def numbers(self, ast):
+        self.stack.append(self.flatten(ast))
         return ast
+
+    def number_range(self, ast):
+        # We've found a number range so we can pop the previous two
+        # numbers off the stack
+        self.stack.pop()
+        self.stack.pop()
+
+        self.stack.append(self.flatten(ast))
+        return ast
+
+    def section_start(self, ast):
+        identifier = self.stack.pop()
+        primitive = self.stack.pop()
+        self.logger.info("Found a section start with primitive {0} "
+                         "and identifier {1}".format(primitive, identifier))
+
+        # Validate the primitive
+        if primitive in types.primitives:
+            # Create an instance of the new type
+            new_p = types.primitives[primitive]()
+            new_p.identifier = identifier
+            self.entities.append(new_p)
+            self.logger.info("Created a new primitive object:"
+                             " {0}".format(new_p))
+        else:
+            self.fail("{0} is not a valid primitive".format(primitive))
 
     def map(self, ast):
-        self.fail("Found a map!")
-        self.fail(ast)
+        # The stack will be:
+        # [property, key, value, key, value,...]
+
+        prop = None
+        map_dict = {}
+
+        while len(self.stack) != 0:
+            if len(self.stack) == 1:
+                # Must be the property we are assigning the map to
+                prop = self.stack.pop()
+
+            else:
+                # It's a key and a value so add it to the dictionary
+                value = self.stack.pop()
+                key = self.stack.pop()
+                map_dict[key] = value
+
+        self.logger.info("Have a map to assign to {0} with vals {1}".format(prop, map_dict))
+        self.set_prop(prop, map_dict)
