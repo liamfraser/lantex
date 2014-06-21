@@ -26,7 +26,28 @@ class UnresolvedIdentifier(object):
     it yet.
     """
 
+    instance_list = []
+
+    @staticmethod
+    def new(identifier):
+        """
+        If we already have an instance for this identifier, don't make a new
+        one
+        """
+        for i in UnresolvedIdentifier.instance_list:
+            if i.identifier == identifier:
+                return i
+
+        # Didn't find it so make a new one
+        ui = UnresolvedIdentifier(identifier)
+        UnresolvedIdentifier.instance_list.append(ui)
+        return ui
+
+
     def __init__(self, identifier):
+        """
+        Should only be called by our static method new
+        """
         self.identifier = identifier
 
     def __repr__(self):
@@ -128,10 +149,10 @@ class Port(LantexBase):
         super().__init__()
 
         self.identifier = index
-        self.vlans = None
+        self.networks = []
         self.pvid = None
 
-        self.properties.append('vlans')
+        self.properties.append('networks')
         self.properties.append('pvid')
 
 class Switch(Addressable):
@@ -141,7 +162,6 @@ class Switch(Addressable):
         self._managed = None
         self._ports = None
         self._default_pvid = None
-        self.network_pmap = None
         
         self.properties.append('managed')
         self.properties.append('ports')
@@ -176,7 +196,7 @@ class Switch(Addressable):
         self._ports = []
 
         for i in range(0, number):
-            self._ports.append(Port(i))
+            self._ports.append(Port(i+1))
 
     @property
     def default_pvid(self):
@@ -194,6 +214,46 @@ class Switch(Addressable):
         for p in self._ports:
             if p.pvid == None:
                 p.pvid = pvid
+
+    @property
+    def network_pmap(self):
+        """
+        Create a dictionary mapping network names to ports / port ranges
+        """
+
+        if self._ports == None:
+            return None
+
+        out = {}
+
+        for p in self._ports:
+            for n in p.networks:
+                if n.identifier in out:
+                    out[n.identifier].append(p.identifier)
+                else:
+                    out[n.identifier] = [p.identifier]
+
+        return out
+
+    @network_pmap.setter
+    def network_pmap(self, map_dict):
+
+        for network, ports in map_dict.items():
+            # Don't care if the network exists for now. We'll try and resolve
+            # it later.
+            n = UnresolvedIdentifier.new(network)
+
+            # Try and match for a range of numbers like 1-8
+            m = re.search('(\d+)-(\d+)', ports)
+            if m:
+                range_from = int(m.group(1)) - 1
+                range_to = int(m.group(2))
+                for port in range(range_from, range_to):
+                    self._ports[port].networks.append(n)
+
+            else:
+                raise ValueError("Not sure what to do with ports"
+                                 " {0}".format(ports))
 
 class AccessPoint(Addressable):
     def __init__(self):

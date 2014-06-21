@@ -1,8 +1,7 @@
 from grako.exceptions import *  # noqa
 from lantex import types
 import logging
-class lantexSemantics(object):
-
+class LantexSemantics(object):
 
     def __init__(self):
         logging.basicConfig(level=logging.INFO)
@@ -24,17 +23,20 @@ class lantexSemantics(object):
     def _flatten_itr(container):
         for i in container:
             if isinstance(i, list) or isinstance(i, tuple):
-                for j in lantexSemantics.flatten(i):
+                for j in LantexSemantics.flatten(i):
                     yield j
             else:
                 yield i
 
     @staticmethod
     def flatten(container):
-        return "".join(lantexSemantics._flatten_itr(container))
+        return "".join(LantexSemantics._flatten_itr(container))
 
     def set_prop(self, prop, value):
-        # Assign the value to the newest entity
+        """
+        Assign a property : value to the newest entity
+        """
+
         if prop in self.entities[-1].properties:
             setattr(self.entities[-1], prop, value)
         else:

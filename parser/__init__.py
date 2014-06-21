@@ -1,5 +1,5 @@
 from parser.grako import *
-from parser.semantics import lantexSemantics
+from parser.semantics import LantexSemantics
 
 class LantexParser(object):
     """
@@ -15,7 +15,7 @@ class LantexParser(object):
         with open(self.filename) as f:
             text = f.read()
         parser = lantexParser(parseinfo=False)
-        semanticsInstance = lantexSemantics()
+        semanticsInstance = LantexSemantics()
 
         ast = parser.parse(
               text,
