@@ -38,7 +38,11 @@ class LantexSemantics(object):
         """
 
         if prop in self.entities[-1].properties:
-            setattr(self.entities[-1], prop, value)
+            try:
+                setattr(self.entities[-1], prop, value)
+            except:
+                self.fail("Caught error trying to set value {0}"
+                          " for property {1}".format(value, prop))
         else:
             self.fail("Unknown property {0} for "
                       "entity {1}".format(prop, self.entities[-1]))
@@ -74,6 +78,20 @@ class LantexSemantics(object):
     def numbers(self, ast):
         self.stack.append(self.flatten(ast))
         return ast
+
+    def ip4(self, ast):
+        self.stack.append(self.flatten(ast))
+        return ast
+
+    def ip6(self, ast):
+        self.stack.append(self.flatten(ast))
+        return ast
+
+    def ipmask(self, ast):
+        # Stack will have [property, ip, netmask]
+        mask = self.stack.pop()
+        addr =  self.stack.pop()
+        self.stack.append("{0}/{1}".format(addr, mask))
 
     def number_range(self, ast):
         # We've found a number range so we can pop the previous two
