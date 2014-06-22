@@ -69,7 +69,7 @@ class Connection(object):
     def __repr__(self):
         return "Connection: {0}->{1} : {2}->{3}".format(self.from_e.identifier,
                                                         self.from_i,
-                                                        self.to_e,
+                                                        self.to_e.identifier,
                                                         self.to_i)
 
 class Addressable(LantexBase):
@@ -78,11 +78,15 @@ class Addressable(LantexBase):
 
         self._v4 = None
         self._v6 = None
+        self._v4_range = None
+        self._v6_range = None
         self._v4_gateway = None
         self._v6_gateway = None
 
         self.properties.append('v4')
         self.properties.append('v6')
+        self.properties.append('v4_range')
+        self.properties.append('v6_range')
         self.properties.append('v4_gateway')
         self.properties.append('v6_gateway')
 
@@ -119,22 +123,72 @@ class Addressable(LantexBase):
             self._v6_gateway = UnresolvedIdentifier(value)
 
     @property
+    def v4_range(self):
+        return self._v4_range
+
+    @v4_range.setter
+    def v4_range(self, value):
+        ip = IPv4Addr(value)
+        self._v4_range = ip
+
+    @property
+    def v6_range(self):
+        return self._v6_range
+
+    @v6_range.setter
+    def v6_range(self, value):
+        ip = IPv6Addr(value)
+        self._v6_range = ip
+
+    @property
     def v4(self):
         return self._v4
-    
+
     @v4.setter
     def v4(self, value):
+        if self._v4 == None:
+            self._v4 = {}
+
+        network = 'unknown'
+
+        if type(value) is tuple:
+            if type(value[0]) is Network:
+                network = value[0]
+                value = value[1]
+            else:
+                raise ValueError("Bad tuple {0} for v4 address".format(value))
+
         ip = IPv4Addr(value)
-        self._v4 = ip
+
+        if network in self._v4:
+            self._v4[network].append(ip)
+        else:
+            self._v4[network] = [ip]
 
     @property
     def v6(self):
         return self._v6
-    
+
     @v6.setter
     def v6(self, value):
+        if self._v6 == None:
+            self._v6 = {}
+
+        network = 'unknown'
+
+        if type(value) is tuple:
+            if type(value[0]) is Network:
+                network = value[0]
+                value = value[1]
+            else:
+                raise ValueError("Bad tuple {0} for v6 address".format(value))
+
         ip = IPv6Addr(value)
-        self._v6 = ip
+
+        if network in self._v6:
+            self._v6[network].append(ip)
+        else:
+            self._v6[network] = [ip]
 
 class IPAddr(object):
     def __init__(self, addr):

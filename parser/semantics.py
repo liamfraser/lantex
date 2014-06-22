@@ -38,17 +38,27 @@ class LantexSemantics(object):
         Assign a property : value to the newest entity
         """
 
-        if prop in self.entities[-1].properties:
+        entity = self.entities[-1]
+
+        if prop in entity.properties:
             try:
-                setattr(self.entities[-1], prop, value)
+                setattr(entity, prop, value)
             except:
                 self.fail("Caught error trying to set value {0}"
                           " for property {1}".format(value, prop))
         else:
             self.fail("Unknown property {0} for "
-                      "entity {1}".format(prop, self.entities[-1]))
+                      "entity {1}".format(prop, entity))
 
-        self.logger.info("Updated: {0}".format(self.entities[-1]))
+        self.logger.info("Updated: {0}".format(entity))
+
+    def find_identifier(self, name):
+        for e in self.entities:
+            if e.identifier == name:
+                return e
+
+        raise ValueError("Couldn't find entity with identifier"
+                         " {0}".format(name))
 
     def value_assignment(self, ast):
         if len(self.stack) == 0:
@@ -129,7 +139,7 @@ class LantexSemantics(object):
         c = Connection()
         c.from_e = self.entities[-1]
         c.to_i = int(self.stack.pop())
-        c.to_e = UnresolvedIdentifier.new(self.stack.pop())
+        c.to_e = self.find_identifier(self.stack.pop())
         c.from_i = int(self.stack.pop())
 
         # Pop port map off too
@@ -145,8 +155,8 @@ class LantexSemantics(object):
         # [property, key, value, key, value,...]
 
         if len(self.stack) == 0:
-            self.logger.info("Trying to create map with empty stack. Must have "
-                             "just created a connection")
+            self.logger.info("Trying to create map with empty stack. Must have"
+                             " just created a connection")
             return
 
         prop = None
@@ -163,5 +173,18 @@ class LantexSemantics(object):
                 key = self.stack.pop()
                 map_dict[key] = value
 
-        self.logger.info("Have a map to assign to {0} with vals {1}".format(prop, map_dict))
+        self.logger.info("Have a map to assign to {0} with vals"
+                         " {1}".format(prop, map_dict))
         self.set_prop(prop, map_dict)
+
+    def access_assign(self, ast):
+        # Top of stack is value, rest is entity -> property
+        value = self.stack.pop()
+        prop = self.stack.pop()
+        entity = self.find_identifier(self.stack.pop())
+
+        if type(entity) is Network:
+            # Add the address in value to the property prop on network entity
+            self.set_prop(prop, (entity, value))
+        else:
+            self.fail("Didn't expect type {0}".format(type(entity)))
