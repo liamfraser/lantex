@@ -1,5 +1,5 @@
 from grako.exceptions import *  # noqa
-from lantex import types
+from lantex.types import *
 import logging
 class LantexSemantics(object):
 
@@ -7,6 +7,7 @@ class LantexSemantics(object):
         logging.basicConfig(level=logging.INFO)
         self.logger = logging.getLogger(__name__)
         self.entities = []
+        self.connections = []
         self.stack = []
 
     def fail(self, error):
@@ -109,9 +110,9 @@ class LantexSemantics(object):
                          "and identifier {1}".format(primitive, identifier))
 
         # Validate the primitive
-        if primitive in types.primitives:
+        if primitive in primitives:
             # Create an instance of the new type
-            new_p = types.primitives[primitive]()
+            new_p = primitives[primitive]()
             new_p.identifier = identifier
             self.entities.append(new_p)
             self.logger.info("Created a new primitive object:"
@@ -119,9 +120,34 @@ class LantexSemantics(object):
         else:
             self.fail("{0} is not a valid primitive".format(primitive))
 
+    def text(self, ast):
+        self.stack.append(self.flatten(ast))
+        return ast
+
+    def connection(self, ast):
+        # Stack looks like [port_map, from_port, to, to_port]
+        c = Connection()
+        c.from_e = self.entities[-1]
+        c.to_i = int(self.stack.pop())
+        c.to_e = UnresolvedIdentifier.new(self.stack.pop())
+        c.from_i = int(self.stack.pop())
+
+        # Pop port map off too
+        prop = self.stack.pop()
+        if prop != 'port_map':
+            self.fail("Expected to pop 'port_map' off stack")
+
+        self.logger.info("Added connection: {0}".format(c))
+        self.connections.append(c)
+
     def map(self, ast):
         # The stack will be:
         # [property, key, value, key, value,...]
+
+        if len(self.stack) == 0:
+            self.logger.info("Trying to create map with empty stack. Must have "
+                             "just created a connection")
+            return
 
         prop = None
         map_dict = {}

@@ -53,6 +53,25 @@ class UnresolvedIdentifier(object):
     def __repr__(self):
         return "UnresolvedIdentifier {0}".format(self.identifier)
 
+class Connection(object):
+    """
+    Connects a port of an entity to the port of another entity
+    """
+
+    def __init__(self):
+        self.from_e = None
+        self.to_e = None
+
+        # 1 based port indexes
+        self.from_i = None
+        self.to_i = None
+
+    def __repr__(self):
+        return "Connection: {0}->{1} : {2}->{3}".format(self.from_e.identifier,
+                                                        self.from_i,
+                                                        self.to_e,
+                                                        self.to_i)
+
 class Addressable(LantexBase):
     def __init__(self):
         super().__init__()
@@ -247,7 +266,6 @@ class Switch(Addressable, Ports):
 
     @network_pmap.setter
     def network_pmap(self, map_dict):
-
         for network, ports in map_dict.items():
             # Don't care if the network exists for now. We'll try and resolve
             # it later.
@@ -269,6 +287,32 @@ class AccessPoint(Addressable, Ports):
     def __init__(self):
         Addressable.__init__(self)
         Ports.__init__(self)
+
+        self._network_ssidmap = None
+        self.properties.append('network_ssidmap')
+
+    @property
+    def network_ssidmap(self):
+        return self._network_ssidmap
+
+    @network_ssidmap.setter
+    def network_ssidmap(self, map_dict):
+        # Will have a dictionary mapping a Network to an SSID
+        # Networks will be an unresolved identifier for now
+
+        if self._network_ssidmap == None:
+            self._network_ssidmap = {}
+        else:
+            raise ValueError("Network ssidmap already set: {0}".format(
+                             self._network_ssidmap))
+
+        for network, ssid in map_dict.items():
+            n = UnresolvedIdentifier.new(network)
+            if n not in self._network_ssidmap:
+                self._network_ssidmap[n] = ssid
+            else:
+                raise ValueError("Network {0} already exists in network ssidmap: "
+                                 "{1}".format(network, self._network_ssidmap))
 
 class Network(Addressable):
     def __init__(self):

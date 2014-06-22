@@ -13,7 +13,7 @@ from grako.parsing import *  # noqa
 from grako.exceptions import *  # noqa
 
 
-__version__ = '14.173.17.09.55'
+__version__ = '14.173.17.38.17'
 
 
 class lantexParser(Parser):
@@ -134,7 +134,7 @@ class lantexParser(Parser):
                 self._token(' ')
             with self._option():
                 self._token('\t')
-            self._error('expecting one of: \t  ')
+            self._error('expecting one of:   \t')
 
     @rule_def
     def _spaces_(self):
@@ -229,22 +229,19 @@ class lantexParser(Parser):
 
     @rule_def
     def _access_(self):
-        with self._choice():
-            with self._option():
-                self._identifier_()
-                self._arrow_()
-                with self._group():
-                    with self._choice():
-                        with self._option():
-                            self._identifier_()
-                        with self._option():
-                            self._numbers_()
-                        self._error('no available options')
-            with self._option():
-                self._identifier_()
-                self._arrow_()
-                self._access_()
-            self._error('no available options')
+        self._identifier_()
+        self._arrow_()
+        with self._group():
+            with self._choice():
+                with self._option():
+                    self._identifier_()
+                with self._option():
+                    self._numbers_()
+                self._error('no available options')
+
+        def block1():
+            self._access_()
+        self._closure(block1)
 
     @rule_def
     def _access_assign_(self):
@@ -258,10 +255,18 @@ class lantexParser(Parser):
             self._notes_()
 
     @rule_def
-    def _connection_(self):
+    def _port_(self):
         self._identifier_()
         self._arrow_()
         self._numbers_()
+
+    @rule_def
+    def _connection_(self):
+        self._numbers_()
+        self._spaces_()
+        self._colon_()
+        self._spaces_()
+        self._port_()
 
     @rule_def
     def _colon_(self):
@@ -279,19 +284,20 @@ class lantexParser(Parser):
         with self._group():
             with self._choice():
                 with self._option():
-                    self._numbers_()
-                with self._option():
-                    self._identifier_()
-                self._error('no available options')
-        self._spaces_()
-        self._colon_()
-        self._spaces_()
-        with self._group():
-            with self._choice():
-                with self._option():
                     self._connection_()
                 with self._option():
-                    self._atype_()
+                    with self._group():
+                        with self._group():
+                            with self._choice():
+                                with self._option():
+                                    self._numbers_()
+                                with self._option():
+                                    self._identifier_()
+                                self._error('no available options')
+                        self._spaces_()
+                        self._colon_()
+                        self._spaces_()
+                        self._atype_()
                 self._error('no available options')
         self._spaces_()
 
@@ -450,6 +456,9 @@ class lantexSemantics(object):
         return ast
 
     def access_assign(self, ast):
+        return ast
+
+    def port(self, ast):
         return ast
 
     def connection(self, ast):
