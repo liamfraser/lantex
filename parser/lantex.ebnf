@@ -34,7 +34,7 @@ notes = lbrack text rbrack ;
 value_assignment = identifier spaces assignment spaces (atype | map) [spaces notes] ;
 
 arrow = '->' ;
-access = identifier arrow access | identifier arrow identifier ;
+access = identifier arrow (identifier | numbers) | identifier arrow access ;
 
 access_assign = access spaces assignment spaces atype [spaces notes] ;
 connection = identifier arrow numbers ;

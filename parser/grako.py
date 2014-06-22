@@ -13,7 +13,7 @@ from grako.parsing import *  # noqa
 from grako.exceptions import *  # noqa
 
 
-__version__ = '14.172.15.30.20'
+__version__ = '14.173.17.09.55'
 
 
 class lantexParser(Parser):
@@ -233,11 +233,17 @@ class lantexParser(Parser):
             with self._option():
                 self._identifier_()
                 self._arrow_()
-                self._access_()
+                with self._group():
+                    with self._choice():
+                        with self._option():
+                            self._identifier_()
+                        with self._option():
+                            self._numbers_()
+                        self._error('no available options')
             with self._option():
                 self._identifier_()
                 self._arrow_()
-                self._identifier_()
+                self._access_()
             self._error('no available options')
 
     @rule_def
