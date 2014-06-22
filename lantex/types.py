@@ -155,16 +155,42 @@ class Port(LantexBase):
         self.properties.append('networks')
         self.properties.append('pvid')
 
-class Switch(Addressable):
+class Ports(object):
+    """
+    Base class for an object with ports. Will be used with multiple inheritance
+    """
+
     def __init__(self):
-        super().__init__()
+        self._ports = None
+        self.properties.append('ports')
+
+    @property
+    def ports(self):
+        return self._ports
+
+    @ports.setter
+    def ports(self, number):
+        try:
+            number = int(number)
+        except:
+            raise ValueError("Can't convert port number {0}"
+                             " to an int".format(number))
+
+        self._ports = []
+
+        for i in range(0, number):
+            self._ports.append(Port(i+1))
+
+
+class Switch(Addressable, Ports):
+    def __init__(self):
+        Addressable.__init__(self)
+        Ports.__init__(self)
 
         self._managed = None
-        self._ports = None
         self._default_pvid = None
         
         self.properties.append('managed')
-        self.properties.append('ports')
         self.properties.append('default_pvid')
         self.properties.append('network_pmap')
 
@@ -181,22 +207,6 @@ class Switch(Addressable):
             self._managed = False
         else:
             raise ValueError("Invalid value {0} for property managed".format(value))
-
-    @property
-    def ports(self):
-        return self._ports
-
-    @ports.setter
-    def ports(self, number):
-        try:
-            number = int(number)
-        except:
-            raise ValueError("Can't convert port number {0} to an int".format(number))
-
-        self._ports = []
-
-        for i in range(0, number):
-            self._ports.append(Port(i+1))
 
     @property
     def default_pvid(self):
@@ -255,9 +265,10 @@ class Switch(Addressable):
                 raise ValueError("Not sure what to do with ports"
                                  " {0}".format(ports))
 
-class AccessPoint(Addressable):
+class AccessPoint(Addressable, Ports):
     def __init__(self):
-        super().__init__()
+        Addressable.__init__(self)
+        Ports.__init__(self)
 
 class Network(Addressable):
     def __init__(self):
