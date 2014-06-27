@@ -13,7 +13,7 @@ from grako.parsing import *  # noqa
 from grako.exceptions import *  # noqa
 
 
-__version__ = '14.173.17.38.17'
+__version__ = '14.178.15.41.58'
 
 
 class lantexParser(Parser):
@@ -134,7 +134,7 @@ class lantexParser(Parser):
                 self._token(' ')
             with self._option():
                 self._token('\t')
-            self._error('expecting one of:   \t')
+            self._error('expecting one of: \t  ')
 
     @rule_def
     def _spaces_(self):
@@ -256,9 +256,15 @@ class lantexParser(Parser):
 
     @rule_def
     def _port_(self):
-        self._identifier_()
-        self._arrow_()
-        self._numbers_()
+        with self._group():
+            with self._choice():
+                with self._option():
+                    self._identifier_()
+                    self._arrow_()
+                    self._numbers_()
+                with self._option():
+                    self._identifier_()
+                self._error('no available options')
 
     @rule_def
     def _connection_(self):

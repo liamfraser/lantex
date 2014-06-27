@@ -37,7 +37,7 @@ arrow = '->' ;
 access = identifier arrow (identifier | numbers) {access}* ;
 
 access_assign = access spaces assignment spaces atype [spaces notes] ;
-port = identifier arrow numbers ;
+port = (identifier arrow numbers | identifier) ;
 connection = numbers spaces colon spaces port ;
 
 colon = ':' ;
