@@ -137,16 +137,34 @@ class LantexSemantics(object):
 
     def connection(self, ast):
         # Stack looks like [port_map, from_port, to, to_port]
+        # or if it's only pointing to a network and not a specific port then
+        # it will look like [port_map, from_port, to]
         c = Connection()
         c.from_e = self.entities[-1]
-        c.to_i = int(self.stack.pop())
-        c.to_e = self.find_identifier(self.stack.pop())
+
+        # Next on stack can either be a number or a string and this will decide
+        # the type of connection it is.
+        nos = self.stack.pop()
+
+        try:
+            c.to_i = int(nos)
+            # If it was successful we can pop the next thing off the stack
+            # too
+            nos = self.stack.pop()
+        except:
+            pass
+        finally:
+            c.to_e = self.find_identifier(nos)
+
         c.from_i = int(self.stack.pop())
 
-        # Pop port map off too
-        prop = self.stack.pop()
-        if prop != 'port_map':
-            self.fail("Expected to pop 'port_map' off stack")
+        # Pop port map off too. Only need to do this if it's the first item
+        # in the map. Otherwise the stack will be empty.
+
+        if len(self.stack) != 0:
+            prop = self.stack.pop()
+            if prop != 'port_map':
+                self.fail("Expected to pop 'port_map' off stack")
 
         self.logger.info("Added connection: {0}".format(c))
         self.connections.append(c)

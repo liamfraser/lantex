@@ -87,10 +87,14 @@ class Connection(object):
         self.to_i = None
 
     def __repr__(self):
-        return "Connection: {0}->{1} : {2}->{3}".format(self.from_e.identifier,
-                                                        self.from_i,
-                                                        self.to_e.identifier,
-                                                        self.to_i)
+        out = "Connection: {0}->{1} : ".format(self.from_e.identifier,
+                                               self.from_i)
+        if self.to_i == None:
+            out += self.to_e.identifier
+        else:
+            out += "{0}->{1}".format(self.to_e.identifier, self.to_i)
+
+        return out
 
 class Addressable(LantexBase):
     def __init__(self):
