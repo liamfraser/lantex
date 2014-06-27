@@ -1,14 +1,15 @@
 from grako.exceptions import *  # noqa
 from lantex.types import *
 import logging
-class LantexSemantics(object):
 
+class LantexSemantics(object):
     def __init__(self):
         logging.basicConfig(level=logging.INFO)
         self.logger = logging.getLogger(__name__)
         self.entities = []
         self.connections = []
         self.stack = []
+        self.unresolved_identifiers = UnresolvedIdentifier.instance_list
 
     def fail(self, error):
         """

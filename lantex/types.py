@@ -43,15 +43,35 @@ class UnresolvedIdentifier(object):
         UnresolvedIdentifier.instance_list.append(ui)
         return ui
 
+    @staticmethod
+    def resolve_all(entities, instance_list):
+        if len(instance_list) == 0:
+            raise ValueError("No unresolved identifiers")
+
+        for i in instance_list:
+            found = False
+            for e in entities:
+                if i.identifier == e.identifier:
+                    # Found the entity we want
+                    i.resolved = e
+                    found = True
+
+            if found == False:
+                raise ValueError("Couldn't resolve identifier"
+                                 " {0}".format(i.identifier))
 
     def __init__(self, identifier):
         """
         Should only be called by our static method new
         """
         self.identifier = identifier
+        self.resolved = None
 
     def __repr__(self):
-        return "UnresolvedIdentifier {0}".format(self.identifier)
+        if self.resolved != None:
+            return "ResolvedIdentifier {0}".format(self.resolved.__repr__())
+        else:
+            return "UnresolvedIdentifier {0}".format(self.identifier)
 
 class Connection(object):
     """
@@ -392,9 +412,10 @@ class Tunnel(Addressable):
     def __init__(self):
         super().__init__()
 
-class Host(Addressable):
+class Host(Addressable, Ports):
     def __init__(self):
-        super().__init__()
+        Addressable.__init__(self)
+        Ports.__init__(self)
 
 primitives = { 'Switch'      : Switch,
                'AccessPoint' : AccessPoint,

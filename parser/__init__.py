@@ -1,3 +1,4 @@
+from lantex.types import *
 from parser.grako import *
 from parser.semantics import LantexSemantics
 
@@ -26,3 +27,6 @@ class LantexParser(object):
               whitespace="")
 
         self.entities = semanticsInstance.entities
+        self.unresolved_identifiers = semanticsInstance.unresolved_identifiers
+        UnresolvedIdentifier.resolve_all(self.entities,
+                                         self.unresolved_identifiers)
