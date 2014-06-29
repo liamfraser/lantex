@@ -1,2 +1,3 @@
 Requirements:
-Grako
+grako
+svgwrite

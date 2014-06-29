@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 from lantex.types import *
+from lantex.drawing import Drawing
 from parser import LantexParser
 import logging
 
@@ -8,4 +9,5 @@ if __name__ == "__main__":
     loglevel = logging.INFO
     p = LantexParser('/home/liam/Documents/lantex/test.lan', False, loglevel)
     p.parse()
-    print(p.entities)
+    d = Drawing()
+    d.render('/home/liam/Documents/lantex/out.svg')
