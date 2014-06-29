@@ -96,6 +96,16 @@ class Connection(object):
 
         return out
 
+    def update_ports(self):
+        """
+        Update the port.networks entries for the relevant entity
+        """
+
+        if self.to_i != None:
+            self.from_e.ports[self.from_i - 1].networks = self.to_e.ports[self.to_i - 1].networks
+        else:
+            self.from_e.ports[self.from_i - 1].networks = [self.to_e]
+
 class Addressable(LantexBase):
     def __init__(self):
         super().__init__()
@@ -278,6 +288,49 @@ class Ports(object):
         for i in range(0, number):
             self._ports.append(Port(i+1))
 
+    @property
+    def networks(self):
+        """
+        Return a list of the all of the networks accessible across the entire
+        device (i.e. all ports).
+        """
+
+        networks = {}
+
+        for p in self._ports:
+            for n in p.networks:
+                if n not in networks:
+                    networks[n] = None
+
+        return list(networks.keys())
+
+class Service(object):
+    def __init__(self, stype, notes):
+        self.type = stype
+        self.notes = notes
+
+class Services(object):
+    """
+    Base class for any object that can provide services like a web server
+    """
+
+    def __init__(self):
+        self.services = {}
+
+    def add_service(self, network, service_type, notes=None):
+        new_service = Service(service_type, notes)
+
+        if network == 'all':
+            network = self.networks
+        else:
+            network = [network]
+
+        for n in network:
+            if n in self.services:
+                self.services[n].append(new_service)
+            else:
+                self.services[n] = [new_service]
+
 
 class Switch(Addressable, Ports):
     def __init__(self):
@@ -361,10 +414,11 @@ class Switch(Addressable, Ports):
                 raise ValueError("Not sure what to do with ports"
                                  " {0}".format(ports))
 
-class AccessPoint(Addressable, Ports):
+class AccessPoint(Addressable, Ports, Services):
     def __init__(self):
         Addressable.__init__(self)
         Ports.__init__(self)
+        Services.__init__(self)
 
         self._network_ssidmap = None
         self.properties.append('network_ssidmap')
@@ -416,10 +470,11 @@ class Tunnel(Addressable):
     def __init__(self):
         super().__init__()
 
-class Host(Addressable, Ports):
+class Host(Addressable, Ports, Services):
     def __init__(self):
         Addressable.__init__(self)
         Ports.__init__(self)
+        Services.__init__(self)
 
 primitives = { 'Switch'      : Switch,
                'AccessPoint' : AccessPoint,

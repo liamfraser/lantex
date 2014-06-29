@@ -6,4 +6,4 @@ from parser import LantexParser
 if __name__ == "__main__":
     p = LantexParser('/home/liam/Documents/lantex/test.lan', trace=False)
     p.parse()
-    print(p.unresolved_identifiers)
+    print(p.entities)

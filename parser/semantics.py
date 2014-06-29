@@ -9,6 +9,7 @@ class LantexSemantics(object):
         self.entities = []
         self.connections = []
         self.stack = []
+        self.new_note = None
         self.unresolved_identifiers = UnresolvedIdentifier.instance_list
 
     def fail(self, error):
@@ -17,9 +18,13 @@ class LantexSemantics(object):
         """
 
         self.logger.error("fail: {0}".format(error))
-        self.logger.error("stack: {0}".format(self.stack))
         self.logger.error("entities: {0}".format(self.entities))
+        self.logger.error("stack: {0}".format(self.stack))
         raise ValueError(error)
+
+    @property
+    def latest(self):
+        return self.entities[-1]
 
     @staticmethod
     def _flatten_itr(container):
@@ -39,7 +44,7 @@ class LantexSemantics(object):
         Assign a property : value to the newest entity
         """
 
-        entity = self.entities[-1]
+        entity = self.latest
 
         if prop in entity.properties:
             try:
@@ -140,7 +145,7 @@ class LantexSemantics(object):
         # or if it's only pointing to a network and not a specific port then
         # it will look like [port_map, from_port, to]
         c = Connection()
-        c.from_e = self.entities[-1]
+        c.from_e = self.latest
 
         # Next on stack can either be a number or a string and this will decide
         # the type of connection it is.
@@ -166,8 +171,10 @@ class LantexSemantics(object):
             if prop != 'port_map':
                 self.fail("Expected to pop 'port_map' off stack")
 
-        self.logger.info("Added connection: {0}".format(c))
         self.connections.append(c)
+        self.logger.info("Added connection: {0}".format(c))
+        self.logger.info("Updating port entries")
+        c.update_ports()
 
     def map(self, ast):
         # The stack will be:
@@ -196,11 +203,39 @@ class LantexSemantics(object):
                          " {1}".format(prop, map_dict))
         self.set_prop(prop, map_dict)
 
+    def notes(self, ast):
+        if self.new_note == None:
+            self.new_note = self.stack.pop()
+        else:
+            raise ValueError("Need to create a new note but the old one"
+                             " hasn't been used")
+
     def access_assign(self, ast):
+        """
+        There are a couple of different ways that access assigns can work. One
+        thing it's used to do is to add IP addresses to networks. The other way
+        it's used is to add services to things. Services may have notes after
+        them in parentheses. Services can either be added to a specific network
+        or all networks. If it's all networks, the entity will be 'all'.
+        """
+
         # Top of stack is value, rest is entity -> property
         value = self.stack.pop()
         prop = self.stack.pop()
-        entity = self.find_identifier(self.stack.pop())
+        entity = self.stack.pop()
+
+        if prop == 'service':
+            if entity != 'all':
+                entity = self.find_identifier(entity)
+
+            self.latest.add_service(entity, value, self.new_note)
+            # Destroy the note now
+            self.new_note = None
+
+            return
+
+        # Aren't adding a service so continue as usual
+        entity = self.find_identifier(entity)
 
         if type(entity) is Network:
             # Add the address in value to the property prop on network entity
