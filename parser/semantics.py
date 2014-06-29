@@ -242,3 +242,15 @@ class LantexSemantics(object):
             self.set_prop(prop, (entity, value))
         else:
             self.fail("Didn't expect type {0}".format(type(entity)))
+
+    def tunnel_route(self, ast):
+        # Stack is ['Tunnel', tunnel_identifier, via_network]
+        via = self.find_identifier(self.stack.pop())
+        tunnel = self.find_identifier(self.stack.pop())
+
+        if self.stack.pop() != 'Tunnel':
+            self.fail("Expected to pop 'Tunnel' off the stack")
+
+        r = Route(tunnel, via)
+        self.latest.routes.append(r)
+        self.logger.info("Created new route: {0}".format(r))

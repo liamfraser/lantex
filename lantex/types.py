@@ -331,6 +331,20 @@ class Services(object):
             else:
                 self.services[n] = [new_service]
 
+class Route(object):
+    def __init__(self, target, via):
+        self.target = target
+        self.via = via
+
+    def __repr__(self):
+        out = "Route: {0} via {1}".format(self.target.identifier,
+                                          self.via.identifier)
+        return out
+
+class Routes(object):
+    def __init__(self):
+        self.routes = []
+        self.properties.append('routes')
 
 class Switch(Addressable, Ports):
     def __init__(self):
@@ -470,11 +484,12 @@ class Tunnel(Addressable):
     def __init__(self):
         super().__init__()
 
-class Host(Addressable, Ports, Services):
+class Host(Addressable, Ports, Services, Routes):
     def __init__(self):
         Addressable.__init__(self)
         Ports.__init__(self)
         Services.__init__(self)
+        Routes.__init__(self)
 
 primitives = { 'Switch'      : Switch,
                'AccessPoint' : AccessPoint,
