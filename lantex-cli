@@ -2,8 +2,10 @@
 
 from lantex.types import *
 from parser import LantexParser
+import logging
 
 if __name__ == "__main__":
-    p = LantexParser('/home/liam/Documents/lantex/test.lan', trace=False)
+    loglevel = logging.INFO
+    p = LantexParser('/home/liam/Documents/lantex/test.lan', False, loglevel)
     p.parse()
     print(p.entities)

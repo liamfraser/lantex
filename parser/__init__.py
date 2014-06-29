@@ -1,22 +1,23 @@
 from lantex.types import *
 from parser.grako import *
 from parser.semantics import LantexSemantics
+import logging
 
 class LantexParser(object):
     """
     Simple class responsible for kicking off the grako parser
     """
 
-    def __init__(self, filename, trace=False):
+    def __init__(self, filename, trace=False, loglevel=logging.ERROR):
         self.filename = filename
         self.trace = trace
-        self.entities = None
+        self.loglevel = loglevel
 
     def parse(self):
         with open(self.filename) as f:
             text = f.read()
         parser = lantexParser(parseinfo=False)
-        semanticsInstance = LantexSemantics()
+        semanticsInstance = LantexSemantics(self.loglevel)
 
         ast = parser.parse(
               text,

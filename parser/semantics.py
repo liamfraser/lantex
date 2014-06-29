@@ -3,8 +3,8 @@ from lantex.types import *
 import logging
 
 class LantexSemantics(object):
-    def __init__(self):
-        logging.basicConfig(level=logging.INFO)
+    def __init__(self, loglevel):
+        logging.basicConfig(level=loglevel)
         self.logger = logging.getLogger(__name__)
         self.entities = []
         self.connections = []
