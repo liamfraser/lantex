@@ -32,6 +32,12 @@ class Color(object):
 
         return out
 
+class Font(object):
+    def __init__(self, name, width, height):
+        self.name = name,
+        self.width = width # Width in pixels per character
+        self.height = height # Height in pixels per character
+
 class Drawing(object):
     def __init__(self, output, parser_data):
         self.parser_data = parser_data
@@ -39,10 +45,12 @@ class Drawing(object):
         with open('lantex/theme.json', 'r') as fh:
             decoder = json.JSONDecoder()
             theme = decoder.decode(fh.read())
-            self.font = theme['font']
+            self.font = Font(theme['font']['name'],
+                             theme['font']['width'],
+                             theme['font']['height'])
             self.colors = Color.from_json(theme)
 
-        self.ff = "font-family: '{0}'".format(self.font)
+        self.ff = "font-family: '{0}';  font-size='20px'".format(self.font.name)
         self.dwg = svgwrite.Drawing(output,
                                     profile='full',
                                     style=self.ff)
@@ -50,6 +58,6 @@ class Drawing(object):
     def render(self):
         for entity in self.parser_data.entities:
             if issubclass(entity.__class__, Drawable):
-                entity.draw(self.dwg, self.colors)
+                entity.draw(self.dwg, self.colors, self.font)
 
         self.dwg.save()

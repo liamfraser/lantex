@@ -29,7 +29,7 @@ class Drawable(object):
     def __init__(self):
         pass
 
-    def draw(self, dwg, colors):
+    def draw(self, dwg, colors, font):
         raise NotImplementedError("Draw function hasn't been implemented")
 
 class UnresolvedIdentifier(object):
@@ -441,7 +441,7 @@ class Switch(Addressable, Ports, Drawable):
                 raise ValueError("Not sure what to do with ports"
                                  " {0}".format(ports))
 
-    def draw(self, dwg, colors):
+    def draw(self, dwg, colors, font):
         """
         We're going to draw a switch as a rectangle with a new row of ports
         for every 8 ports.
@@ -450,27 +450,43 @@ class Switch(Addressable, Ports, Drawable):
         # Create a group for the switch
         g = dwg.add(dwg.g(id='switch-{}'.format(self.identifier)))
 
-        rows = math.ceil(len(self.ports) / 8)
+        # The width will either be 8 ports or the width of the identifier,
+        # whichever is larger.
         ports_per_row = 8
         portsz = 10
         margin = 4
-        w = ((portsz + margin) * ports_per_row) + margin
-        h = ((portsz + margin) * rows) + margin
+        x, y = 5, 5
+        row_startx = x + margin
+        rows = math.ceil(len(self.ports) / ports_per_row)
+
+        # Work out possible sizes
+        id_w = margin + (len(self.identifier) * font.width) + margin
+        port_w =  margin + ((portsz + margin) * ports_per_row)
+        h =  margin + font.height + margin + ((portsz + margin) * rows)
+
+        if id_w >= port_w:
+            w = id_w
+        else:
+            w = port_w
 
         # Draw the outside rectangle
-        x, y = 5, 5
         bgcol = colors['bg']['base2'].rgb
         stcol = colors['bg']['base02'].rgb
         g.add(dwg.rect(insert=(x, y), size=(w, h), fill=bgcol, stroke=stcol))
 
+        x += font.width
+        y += font.height
+
+        # Add it's identifier
+        g.add(dwg.text(self.identifier, insert=(x,y)))
+
         # Draw each port
-        row_startx = x + margin
         x = row_startx
         y += margin
 
         for p in self.ports:
-            # If we're on a new row then reset the x and y values
-            if p.identifier % 9 == 0:
+            # If we're on a new row then
+            if p.identifier % (ports_per_row + 1) == 0:
                 y += (portsz + margin)
                 x = row_startx
 
