@@ -1,5 +1,6 @@
 import svgwrite
 import json
+from lantex.types import Drawable
 
 class Color(object):
     def __init__(self, name, rgb):
@@ -32,14 +33,23 @@ class Color(object):
         return out
 
 class Drawing(object):
-    def __init__(self):
-        with open('lantex/colors.json', 'r') as fh:
-            decoder = json.JSONDecoder()
-            self.colors = Color.from_json(decoder.decode(fh.read()))
+    def __init__(self, output, parser_data):
+        self.parser_data = parser_data
 
-    def render(self, output):
-        dwg = svgwrite.Drawing(output, profile='tiny')
-        # Drawing bits go here
-        col = self.colors['fg']['blue'].rgb
-        dwg.add(svgwrite.text.Text('Hello World', insert=(0, 20), fill=col))
-        dwg.save()
+        with open('lantex/theme.json', 'r') as fh:
+            decoder = json.JSONDecoder()
+            theme = decoder.decode(fh.read())
+            self.font = theme['font']
+            self.colors = Color.from_json(theme)
+
+        self.ff = "font-family: '{0}'".format(self.font)
+        self.dwg = svgwrite.Drawing(output,
+                                    profile='full',
+                                    style=self.ff)
+
+    def render(self):
+        for entity in self.parser_data.entities:
+            if issubclass(entity.__class__, Drawable):
+                entity.draw(self.dwg, self.colors)
+
+        self.dwg.save()

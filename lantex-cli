@@ -9,5 +9,5 @@ if __name__ == "__main__":
     loglevel = logging.INFO
     p = LantexParser('/home/liam/Documents/lantex/test.lan', False, loglevel)
     p.parse()
-    d = Drawing()
-    d.render('/home/liam/Documents/lantex/out.svg')
+    d = Drawing('/home/liam/Documents/lantex/out.svg', p)
+    d.render()

@@ -1,4 +1,6 @@
 import re
+import svgwrite
+import math
 
 class LantexBase(object):
     def __init__(self):
@@ -19,6 +21,16 @@ class LantexBase(object):
 
     def valid_property(self, p):
         return p in self.properties
+
+class Drawable(object):
+    """
+    Base class for Drawable things
+    """
+    def __init__(self):
+        pass
+
+    def draw(self, dwg, colors):
+        raise NotImplementedError("Draw function hasn't been implemented")
 
 class UnresolvedIdentifier(object):
     """
@@ -346,10 +358,11 @@ class Routes(object):
         self.routes = []
         self.properties.append('routes')
 
-class Switch(Addressable, Ports):
+class Switch(Addressable, Ports, Drawable):
     def __init__(self):
         Addressable.__init__(self)
         Ports.__init__(self)
+        Drawable.__init__(self)
 
         self._managed = None
         self._default_pvid = None
@@ -427,6 +440,43 @@ class Switch(Addressable, Ports):
             else:
                 raise ValueError("Not sure what to do with ports"
                                  " {0}".format(ports))
+
+    def draw(self, dwg, colors):
+        """
+        We're going to draw a switch as a rectangle with a new row of ports
+        for every 8 ports.
+        """
+
+        # Create a group for the switch
+        g = dwg.add(dwg.g(id='switch-{}'.format(self.identifier)))
+
+        rows = math.ceil(len(self.ports) / 8)
+        ports_per_row = 8
+        portsz = 10
+        margin = 4
+        w = ((portsz + margin) * ports_per_row) + margin
+        h = ((portsz + margin) * rows) + margin
+
+        # Draw the outside rectangle
+        x, y = 5, 5
+        bgcol = colors['bg']['base2'].rgb
+        stcol = colors['bg']['base02'].rgb
+        g.add(dwg.rect(insert=(x, y), size=(w, h), fill=bgcol, stroke=stcol))
+
+        # Draw each port
+        row_startx = x + margin
+        x = row_startx
+        y += margin
+
+        for p in self.ports:
+            # If we're on a new row then reset the x and y values
+            if p.identifier % 9 == 0:
+                y += (portsz + margin)
+                x = row_startx
+
+            fgcol = colors['fg']['green'].rgb
+            g.add(dwg.rect(insert=(x, y), size=(portsz, portsz), fill=fgcol, stroke=stcol))
+            x += (portsz + margin)
 
 class AccessPoint(Addressable, Ports, Services):
     def __init__(self):
