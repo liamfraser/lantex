@@ -472,7 +472,9 @@ class Switch(Addressable, Ports, Drawable):
 
         rows = math.ceil(len(self.ports) / self.drawing['ports_per_row'])
         id_w = m + (len(self.identifier) * env.font.width) + m
-        port_w =  m + ((self.drawing['port_size'] + m) * self.drawing['ports_per_row'])
+        ports_width =  (self.drawing['port_size'] + m) * self.drawing['ports_per_row']
+        ports_width -= m
+        port_w = m + ports_width + m
         h =  m + env.font.height + m + ((self.drawing['port_size'] + m) * rows)
 
         if id_w >= port_w:
@@ -483,6 +485,7 @@ class Switch(Addressable, Ports, Drawable):
         self.drawing['rows'] = rows
         self.drawing['w'] = w
         self.drawing['h'] = h
+        self.drawing['ports_width'] = ports_width
 
         return w, h
 
@@ -495,11 +498,8 @@ class Switch(Addressable, Ports, Drawable):
         # Create a group for the switch
         g = env.dwg.add(env.dwg.g(id='switch-{}'.format(self.identifier)))
 
-        # Work out the positions for drawing ports later
-        x, y = env.x, env.y
-        row_startx = x + self.drawing['margin']
-
         # Draw the outside rectangle
+        x, y = env.x, env.y
         bgcol = env.colors['bg']['base2'].rgb
         stcol = env.colors['bg']['base02'].rgb
         g.add(env.dwg.rect(insert=(x, y),
@@ -508,14 +508,19 @@ class Switch(Addressable, Ports, Drawable):
                            stroke=stcol))
 
         # Add it's identifier
-        x += env.font.width
-        y += env.font.height
+        x += self.drawing['margin']
+        y += self.drawing['margin'] +  env.font.height
         g.add(env.dwg.text(self.identifier, insert=(x,y)))
 
-        # Draw each port
+        # Work out where to draw first port by working out the width and
+        # where x needs to be to center it
+        ports_width = self.drawing['ports_width']
+        row_startx = int(round((self.drawing['w'] - ports_width) / 2))
+        row_startx += self.drawing['margin']
         x = row_startx
         y += self.drawing['margin']
 
+        # Draw each port
         for p in self.ports:
             # If we're on a new row then
             if p.identifier % (self.drawing['ports_per_row'] + 1) == 0:
