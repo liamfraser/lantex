@@ -34,7 +34,7 @@ class Color(object):
 
 class Font(object):
     def __init__(self, name, width, height):
-        self.name = name,
+        self.name = name
         self.width = width # Width in pixels per character
         self.height = height # Height in pixels per character
 
@@ -60,10 +60,13 @@ class Drawing(object):
                              theme['font']['height'])
             self.colors = Color.from_json(theme)
 
-        self.ff = "font-family: '{0}';  font-size='20px'".format(self.font.name)
+        # Create an SVG document and add a font stylesheet
         self.dwg = svgwrite.Drawing(output,
-                                    profile='full',
-                                    style=self.ff)
+                                    profile='full')
+        stylesheet = self.dwg.style('')
+        stylesheet.append('@import url({0});\n'.format(theme['font']['webfont_url']))
+        stylesheet.append('text {{font: 20px {0}}};'.format(self.font.name))
+        self.dwg.defs.add(stylesheet)
 
     def render(self):
         de = DrawEnv(self.dwg, self.font, self.colors, 5, 5)
