@@ -27,10 +27,28 @@ class Drawable(object):
     Base class for Drawable things
     """
     def __init__(self):
-        pass
+        # Holds drawing data
+        self.drawing = {'margin' : 4}
+        self.__drawinit__()
 
-    def draw(self, dwg, colors, font):
-        raise NotImplementedError("Draw function hasn't been implemented")
+    def __drawinit__(self):
+        """
+        Adds drawing constants to the drawing dict
+        """
+        raise NotImplementedError("Function hasn't been implemented")
+
+    def calc_size(self, env):
+        """
+        Returns the width and height of the object that will be drawn. Used to
+        work out where to position it. Returns (width, height)
+        """
+        raise NotImplementedError("Function hasn't been implemented")
+
+    def draw(self, env):
+        """
+        Env is an instance of DrawEnv
+        """
+        raise NotImplementedError("Function hasn't been implemented")
 
 class UnresolvedIdentifier(object):
     """
@@ -371,6 +389,10 @@ class Switch(Addressable, Ports, Drawable):
         self.properties.append('default_pvid')
         self.properties.append('network_pmap')
 
+    def __drawinit__(self):
+        self.drawing['ports_per_row'] = 8
+        self.drawing['port_size'] = 10
+
     @property
     def managed(self):
         return self._managed
@@ -441,58 +463,72 @@ class Switch(Addressable, Ports, Drawable):
                 raise ValueError("Not sure what to do with ports"
                                  " {0}".format(ports))
 
-    def draw(self, dwg, colors, font):
+    def calc_size(self, env):
         """
-        We're going to draw a switch as a rectangle with a new row of ports
-        for every 8 ports.
+        The width will either be 8 ports or the width of the identifier,
+        whichever is larger.
         """
+        m = self.drawing['margin']
 
-        # Create a group for the switch
-        g = dwg.add(dwg.g(id='switch-{}'.format(self.identifier)))
-
-        # The width will either be 8 ports or the width of the identifier,
-        # whichever is larger.
-        ports_per_row = 8
-        portsz = 10
-        margin = 4
-        x, y = 5, 5
-        row_startx = x + margin
-        rows = math.ceil(len(self.ports) / ports_per_row)
-
-        # Work out possible sizes
-        id_w = margin + (len(self.identifier) * font.width) + margin
-        port_w =  margin + ((portsz + margin) * ports_per_row)
-        h =  margin + font.height + margin + ((portsz + margin) * rows)
+        rows = math.ceil(len(self.ports) / self.drawing['ports_per_row'])
+        id_w = m + (len(self.identifier) * env.font.width) + m
+        port_w =  m + ((self.drawing['port_size'] + m) * self.drawing['ports_per_row'])
+        h =  m + env.font.height + m + ((self.drawing['port_size'] + m) * rows)
 
         if id_w >= port_w:
             w = id_w
         else:
             w = port_w
 
-        # Draw the outside rectangle
-        bgcol = colors['bg']['base2'].rgb
-        stcol = colors['bg']['base02'].rgb
-        g.add(dwg.rect(insert=(x, y), size=(w, h), fill=bgcol, stroke=stcol))
+        self.drawing['rows'] = rows
+        self.drawing['w'] = w
+        self.drawing['h'] = h
 
-        x += font.width
-        y += font.height
+        return w, h
+
+    def draw(self, env):
+        """
+        We're going to draw a switch as a rectangle with a new row of ports
+        for every 8 ports.
+        """
+
+        # Create a group for the switch
+        g = env.dwg.add(env.dwg.g(id='switch-{}'.format(self.identifier)))
+
+        # Work out the positions for drawing ports later
+        x, y = env.x, env.y
+        row_startx = x + self.drawing['margin']
+
+        # Draw the outside rectangle
+        bgcol = env.colors['bg']['base2'].rgb
+        stcol = env.colors['bg']['base02'].rgb
+        g.add(env.dwg.rect(insert=(x, y),
+                           size=(self.drawing['w'], self.drawing['h']),
+                           fill=bgcol,
+                           stroke=stcol))
 
         # Add it's identifier
-        g.add(dwg.text(self.identifier, insert=(x,y)))
+        x += env.font.width
+        y += env.font.height
+        g.add(env.dwg.text(self.identifier, insert=(x,y)))
 
         # Draw each port
         x = row_startx
-        y += margin
+        y += self.drawing['margin']
 
         for p in self.ports:
             # If we're on a new row then
-            if p.identifier % (ports_per_row + 1) == 0:
-                y += (portsz + margin)
+            if p.identifier % (self.drawing['ports_per_row'] + 1) == 0:
+                y += (self.drawing['port_size'] + self.drawing['margin'])
                 x = row_startx
 
-            fgcol = colors['fg']['green'].rgb
-            g.add(dwg.rect(insert=(x, y), size=(portsz, portsz), fill=fgcol, stroke=stcol))
-            x += (portsz + margin)
+            fgcol = env.colors['fg']['green'].rgb
+            g.add(env.dwg.rect(insert=(x, y),
+                               size=(self.drawing['port_size'],
+                                     self.drawing['port_size']),
+                               fill=fgcol,
+                               stroke=stcol))
+            x += (self.drawing['port_size'] + self.drawing['margin'])
 
 class AccessPoint(Addressable, Ports, Services):
     def __init__(self):

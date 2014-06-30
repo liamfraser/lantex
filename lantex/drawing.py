@@ -38,6 +38,16 @@ class Font(object):
         self.width = width # Width in pixels per character
         self.height = height # Height in pixels per character
 
+class DrawEnv(object):
+    def __init__(self, dwg, font, colors, x, y):
+        self.dwg = dwg
+        self.font = font
+        self.colors = colors
+
+        # x and y is where the object should insert itself
+        self.x = x
+        self.y = y
+
 class Drawing(object):
     def __init__(self, output, parser_data):
         self.parser_data = parser_data
@@ -56,8 +66,11 @@ class Drawing(object):
                                     style=self.ff)
 
     def render(self):
+        de = DrawEnv(self.dwg, self.font, self.colors, 5, 5)
+
         for entity in self.parser_data.entities:
             if issubclass(entity.__class__, Drawable):
-                entity.draw(self.dwg, self.colors, self.font)
+                w, h = entity.calc_size(de)
+                entity.draw(de)
 
         self.dwg.save()
