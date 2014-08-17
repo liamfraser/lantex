@@ -13,7 +13,7 @@ from grako.parsing import *  # noqa
 from grako.exceptions import *  # noqa
 
 
-__version__ = '14.229.08.51.39'
+__version__ = '14.229.11.34.30'
 
 
 class lantexParser(Parser):
@@ -62,6 +62,28 @@ class lantexParser(Parser):
         self._numbers_()
 
     @rule_def
+    def _punct_(self):
+        self._pattern(r'[()!"$%&*+,\-./:;<=>?@ [\\\]^_`|~]')
+
+    @rule_def
+    def _text_(self):
+
+        def block0():
+            with self._choice():
+                with self._option():
+                    self._letter_()
+                with self._option():
+                    self._punct_()
+                self._error('no available options')
+        self._positive_closure(block0)
+
+    @rule_def
+    def _ssid_(self):
+        self._token("'")
+        self._text_()
+        self._token("'")
+
+    @rule_def
     def _lbrace_(self):
         self._token('{')
 
@@ -86,7 +108,7 @@ class lantexParser(Parser):
                 self._token('Tunnel')
             with self._option():
                 self._token('Host')
-            self._error('expecting one of: Host Tunnel AccessPoint Network Switch')
+            self._error('expecting one of: Host Network AccessPoint Switch Tunnel')
 
     @rule_def
     def _identifier_(self):
@@ -114,7 +136,7 @@ class lantexParser(Parser):
                 self._token(' ')
             with self._option():
                 self._token('\t')
-            self._error('expecting one of:   \t')
+            self._error('expecting one of: \t  ')
 
     @rule_def
     def _spaces_(self):
@@ -176,6 +198,8 @@ class lantexParser(Parser):
                 self._number_range_()
             with self._option():
                 self._numbers_()
+            with self._option():
+                self._ssid_()
             self._error('no available options')
 
     @rule_def
@@ -360,6 +384,15 @@ class lantexSemantics(object):
         return ast
 
     def number_range(self, ast):
+        return ast
+
+    def punct(self, ast):
+        return ast
+
+    def text(self, ast):
+        return ast
+
+    def ssid(self, ast):
         return ast
 
     def lbrace(self, ast):

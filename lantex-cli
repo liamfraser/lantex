@@ -7,7 +7,8 @@ import logging
 
 if __name__ == "__main__":
     loglevel = logging.INFO
-    p = LantexParser('/home/liam/Documents/lantex/test.lan', False, loglevel)
+    parser_trace = False
+    p = LantexParser('/home/liam/Documents/lantex/test.lan', parser_trace, loglevel)
     p.parse()
     d = Drawing('/home/liam/Documents/lantex/out.svg', p)
     d.render()

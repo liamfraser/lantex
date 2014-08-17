@@ -23,11 +23,14 @@ class LantexBase(object):
 
 class Drawable(object):
     """
-    Base class for Drawable things
+    Base class for Drawable things. For simplicity, we're going to use a
+    rectangle with ports and an identifier as a starting point for every
+    object.
     """
     def __init__(self):
         # Holds drawing data
-        self.drawing = {'margin' : 4}
+        self.drawing = {'margin' : 4,
+                        'port_size': 10}
         self.__drawinit__()
 
     def __drawinit__(self):
@@ -39,15 +42,96 @@ class Drawable(object):
     def calc_size(self, env):
         """
         Returns the width and height of the object that will be drawn. Used to
-        work out where to position it. Returns (width, height)
+        work out where to position it. Returns (width, height). If the child
+        hasn't implemented it we'll just use our base function
         """
-        raise NotImplementedError("Function hasn't been implemented")
+        return self.calc_size_base(env)
+
+    def calc_size_base(self, env):
+        """
+        The width will either be ports_per_row * ports or the width of the
+        identifier, whichever is larger.
+        """
+        m = self.drawing['margin']
+
+        # Identifier width
+        id_width = len(self.identifier) * env.font.width
+        id_width_m = m + id_width + m
+
+        ppr = None
+        if 'ports_per_row' in self.drawing:
+            ppr = self.drawing['ports_per_row']
+        else:
+            # Work out the number of ports that can fit on each row if we use
+            # the identifier width
+            ppr = math.floor(id_width / (m + self.drawing['port_size']))
+            self.drawing['ports_per_row'] = ppr
+
+        rows = math.ceil(len(self.ports) / ppr)
+        ports_width = (self.drawing['port_size'] + m) * len(self.ports)
+        ports_width -= m
+        port_w = m + ports_width + m
+        h = m + env.font.height + m + ((self.drawing['port_size'] + m) * rows)
+
+        if id_width_m >= port_w:
+            w = id_width_m
+        else:
+            w = port_w
+
+        self.drawing['rows'] = rows
+        self.drawing['w'] = w
+        self.drawing['h'] = h
+        self.drawing['ports_width'] = ports_width
+
+        return w, h
 
     def draw(self, env):
         """
-        Env is an instance of DrawEnv
+        Env is an instance of DrawEnv. If the child class hasn't implemented the
+        draw function then we'll use use our base draw function
         """
-        raise NotImplementedError("Function hasn't been implemented")
+        self.draw_base(env)
+
+    def draw_base(self, env):
+        # Create a group for the object
+        g = env.dwg.add(env.dwg.g(id='{0}-{1}'.format(self.__class__.__name__, 
+                                                      self.identifier)))
+
+        # Draw the outside rectangle
+        x, y = env.x, env.y
+        bgcol = env.colors['bg']['base2'].rgb
+        stcol = env.colors['bg']['base02'].rgb
+        g.add(env.dwg.rect(insert=(x, y),
+                           size=(self.drawing['w'], self.drawing['h']),
+                           fill=bgcol,
+                           stroke=stcol))
+
+        # Add it's identifier
+        x += self.drawing['margin']
+        y += self.drawing['margin'] +  env.font.height
+        g.add(env.dwg.text(self.identifier, insert=(x,y)))
+
+        # Work out where to draw first port by working out the width and
+        # where x needs to be to center it
+        ports_width = self.drawing['ports_width']
+        row_startx = env.x + int(round((self.drawing['w'] - ports_width) / 2))
+        x = row_startx
+        y += self.drawing['margin']
+
+        # Draw each port
+        for p in self.ports:
+            # If we're on a new row then
+            if p.identifier % (self.drawing['ports_per_row'] + 1) == 0:
+                y += (self.drawing['port_size'] + self.drawing['margin'])
+                x = row_startx
+
+            fgcol = env.colors['fg']['green'].rgb
+            g.add(env.dwg.rect(insert=(x, y),
+                               size=(self.drawing['port_size'],
+                                     self.drawing['port_size']),
+                               fill=fgcol,
+                               stroke=stcol))
+            x += (self.drawing['port_size'] + self.drawing['margin'])
 
 class UnresolvedIdentifier(object):
     """
@@ -282,7 +366,7 @@ class IPv6Addr(IPAddr):
 
 class Port(LantexBase):
     def __init__(self, index):
-        super().__init__()
+        LantexBase.__init__(self)
 
         self.identifier = index
         self.networks = []
@@ -361,10 +445,6 @@ class Switch(Addressable, Ports, Drawable):
         self.properties.append('default_pvid')
         self.properties.append('network_pmap')
 
-    def __drawinit__(self):
-        self.drawing['ports_per_row'] = 8
-        self.drawing['port_size'] = 10
-
     @property
     def managed(self):
         return self._managed
@@ -435,85 +515,20 @@ class Switch(Addressable, Ports, Drawable):
                 raise ValueError("Not sure what to do with ports"
                                  " {0}".format(ports))
 
-    def calc_size(self, env):
-        """
-        The width will either be 8 ports or the width of the identifier,
-        whichever is larger.
-        """
-        m = self.drawing['margin']
+    def __drawinit__(self):
+        self.drawing['ports_per_row'] = 8
 
-        rows = math.ceil(len(self.ports) / self.drawing['ports_per_row'])
-        id_w = m + (len(self.identifier) * env.font.width) + m
-        ports_width =  (self.drawing['port_size'] + m) * self.drawing['ports_per_row']
-        ports_width -= m
-        port_w = m + ports_width + m
-        h =  m + env.font.height + m + ((self.drawing['port_size'] + m) * rows)
-
-        if id_w >= port_w:
-            w = id_w
-        else:
-            w = port_w
-
-        self.drawing['rows'] = rows
-        self.drawing['w'] = w
-        self.drawing['h'] = h
-        self.drawing['ports_width'] = ports_width
-
-        return w, h
-
-    def draw(self, env):
-        """
-        We're going to draw a switch as a rectangle with a new row of ports
-        for every 8 ports.
-        """
-
-        # Create a group for the switch
-        g = env.dwg.add(env.dwg.g(id='switch-{}'.format(self.identifier)))
-
-        # Draw the outside rectangle
-        x, y = env.x, env.y
-        bgcol = env.colors['bg']['base2'].rgb
-        stcol = env.colors['bg']['base02'].rgb
-        g.add(env.dwg.rect(insert=(x, y),
-                           size=(self.drawing['w'], self.drawing['h']),
-                           fill=bgcol,
-                           stroke=stcol))
-
-        # Add it's identifier
-        x += self.drawing['margin']
-        y += self.drawing['margin'] +  env.font.height
-        g.add(env.dwg.text(self.identifier, insert=(x,y)))
-
-        # Work out where to draw first port by working out the width and
-        # where x needs to be to center it
-        ports_width = self.drawing['ports_width']
-        row_startx = int(round((self.drawing['w'] - ports_width) / 2))
-        row_startx += self.drawing['margin']
-        x = row_startx
-        y += self.drawing['margin']
-
-        # Draw each port
-        for p in self.ports:
-            # If we're on a new row then
-            if p.identifier % (self.drawing['ports_per_row'] + 1) == 0:
-                y += (self.drawing['port_size'] + self.drawing['margin'])
-                x = row_startx
-
-            fgcol = env.colors['fg']['green'].rgb
-            g.add(env.dwg.rect(insert=(x, y),
-                               size=(self.drawing['port_size'],
-                                     self.drawing['port_size']),
-                               fill=fgcol,
-                               stroke=stcol))
-            x += (self.drawing['port_size'] + self.drawing['margin'])
-
-class AccessPoint(Addressable, Ports):
+class AccessPoint(Addressable, Ports, Drawable):
     def __init__(self):
         Addressable.__init__(self)
         Ports.__init__(self)
+        Drawable.__init__(self)
 
         self._network_ssidmap = None
         self.properties.append('network_ssidmap')
+
+    def __drawinit__(self):
+        pass
 
     @property
     def network_ssidmap(self):

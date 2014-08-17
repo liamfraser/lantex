@@ -48,6 +48,13 @@ class DrawEnv(object):
         self.x = x
         self.y = y
 
+    def increment(self, w, h):
+        """
+        Calculate new starting values for the next object from the width
+        and height of the previous object
+        """
+        self.x = self.x + w + 100
+
 class Drawing(object):
     def __init__(self, output, parser_data):
         self.parser_data = parser_data
@@ -75,5 +82,6 @@ class Drawing(object):
             if issubclass(entity.__class__, Drawable):
                 w, h = entity.calc_size(de)
                 entity.draw(de)
+                de.increment(w, h)
 
         self.dwg.save()
