@@ -13,7 +13,7 @@ from grako.parsing import *  # noqa
 from grako.exceptions import *  # noqa
 
 
-__version__ = '14.178.15.41.58'
+__version__ = '14.229.08.51.39'
 
 
 class lantexParser(Parser):
@@ -62,28 +62,6 @@ class lantexParser(Parser):
         self._numbers_()
 
     @rule_def
-    def _punct_(self):
-        self._pattern(r'[!"$%&*+,\-./:;<=>?@ [\\\]^_`|~]')
-
-    @rule_def
-    def _text_(self):
-
-        def block0():
-            with self._choice():
-                with self._option():
-                    self._letter_()
-                with self._option():
-                    self._punct_()
-                self._error('no available options')
-        self._positive_closure(block0)
-
-    @rule_def
-    def _string_(self):
-        self._token("'")
-        self._text_()
-        self._token("'")
-
-    @rule_def
     def _lbrace_(self):
         self._token('{')
 
@@ -92,21 +70,23 @@ class lantexParser(Parser):
         self._token('}')
 
     @rule_def
-    def _lbrack_(self):
-        self._token('(')
-
-    @rule_def
-    def _rbrack_(self):
-        self._token(')')
-
-    @rule_def
     def _nline_(self):
         self._token('\n')
 
     @rule_def
     def _primitive_(self):
-        self._upper_letter_()
-        self._letters_()
+        with self._choice():
+            with self._option():
+                self._token('Switch')
+            with self._option():
+                self._token('AccessPoint')
+            with self._option():
+                self._token('Network')
+            with self._option():
+                self._token('Tunnel')
+            with self._option():
+                self._token('Host')
+            self._error('expecting one of: Host Tunnel AccessPoint Network Switch')
 
     @rule_def
     def _identifier_(self):
@@ -134,7 +114,7 @@ class lantexParser(Parser):
                 self._token(' ')
             with self._option():
                 self._token('\t')
-            self._error('expecting one of: \t  ')
+            self._error('expecting one of:   \t')
 
     @rule_def
     def _spaces_(self):
@@ -196,15 +176,7 @@ class lantexParser(Parser):
                 self._number_range_()
             with self._option():
                 self._numbers_()
-            with self._option():
-                self._string_()
             self._error('no available options')
-
-    @rule_def
-    def _notes_(self):
-        self._lbrack_()
-        self._text_()
-        self._rbrack_()
 
     @rule_def
     def _value_assignment_(self):
@@ -221,16 +193,15 @@ class lantexParser(Parser):
                 self._error('no available options')
         with self._optional():
             self._spaces_()
-            self._notes_()
 
     @rule_def
-    def _arrow_(self):
-        self._token('->')
+    def _dot_(self):
+        self._token('.')
 
     @rule_def
     def _access_(self):
         self._identifier_()
-        self._arrow_()
+        self._dot_()
         with self._group():
             with self._choice():
                 with self._option():
@@ -252,7 +223,6 @@ class lantexParser(Parser):
         self._atype_()
         with self._optional():
             self._spaces_()
-            self._notes_()
 
     @rule_def
     def _port_(self):
@@ -260,7 +230,7 @@ class lantexParser(Parser):
             with self._choice():
                 with self._option():
                     self._identifier_()
-                    self._arrow_()
+                    self._dot_()
                     self._numbers_()
                 with self._option():
                     self._identifier_()
@@ -392,25 +362,10 @@ class lantexSemantics(object):
     def number_range(self, ast):
         return ast
 
-    def punct(self, ast):
-        return ast
-
-    def text(self, ast):
-        return ast
-
-    def string(self, ast):
-        return ast
-
     def lbrace(self, ast):
         return ast
 
     def rbrace(self, ast):
-        return ast
-
-    def lbrack(self, ast):
-        return ast
-
-    def rbrack(self, ast):
         return ast
 
     def nline(self, ast):
@@ -449,13 +404,10 @@ class lantexSemantics(object):
     def atype(self, ast):
         return ast
 
-    def notes(self, ast):
-        return ast
-
     def value_assignment(self, ast):
         return ast
 
-    def arrow(self, ast):
+    def dot(self, ast):
         return ast
 
     def access(self, ast):

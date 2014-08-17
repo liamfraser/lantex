@@ -6,8 +6,7 @@ class LantexBase(object):
     def __init__(self):
         self.identifier = None
         self.description = None
-        self.notes = None
-        self.properties = [ 'description', 'notes' ]
+        self.properties = [ 'description' ]
 
     def __repr__(self):
         out = "{0} {1}:\n".format(type(self).__name__, self.identifier)
@@ -334,33 +333,6 @@ class Ports(object):
 
         return list(networks.keys())
 
-class Service(object):
-    def __init__(self, stype, notes):
-        self.type = stype
-        self.notes = notes
-
-class Services(object):
-    """
-    Base class for any object that can provide services like a web server
-    """
-
-    def __init__(self):
-        self.services = {}
-
-    def add_service(self, network, service_type, notes=None):
-        new_service = Service(service_type, notes)
-
-        if network == 'all':
-            network = self.networks
-        else:
-            network = [network]
-
-        for n in network:
-            if n in self.services:
-                self.services[n].append(new_service)
-            else:
-                self.services[n] = [new_service]
-
 class Route(object):
     def __init__(self, target, via):
         self.target = target
@@ -535,11 +507,10 @@ class Switch(Addressable, Ports, Drawable):
                                stroke=stcol))
             x += (self.drawing['port_size'] + self.drawing['margin'])
 
-class AccessPoint(Addressable, Ports, Services):
+class AccessPoint(Addressable, Ports):
     def __init__(self):
         Addressable.__init__(self)
         Ports.__init__(self)
-        Services.__init__(self)
 
         self._network_ssidmap = None
         self.properties.append('network_ssidmap')
@@ -591,11 +562,10 @@ class Tunnel(Addressable):
     def __init__(self):
         super().__init__()
 
-class Host(Addressable, Ports, Services, Routes):
+class Host(Addressable, Ports, Routes):
     def __init__(self):
         Addressable.__init__(self)
         Ports.__init__(self)
-        Services.__init__(self)
         Routes.__init__(self)
 
 primitives = { 'Switch'      : Switch,

@@ -9,7 +9,6 @@ class LantexSemantics(object):
         self.entities = []
         self.connections = []
         self.stack = []
-        self.new_note = None
         self.unresolved_identifiers = UnresolvedIdentifier.instance_list
 
     def fail(self, error):
@@ -203,38 +202,11 @@ class LantexSemantics(object):
                          " {1}".format(prop, map_dict))
         self.set_prop(prop, map_dict)
 
-    def notes(self, ast):
-        if self.new_note == None:
-            self.new_note = self.stack.pop()
-        else:
-            raise ValueError("Need to create a new note but the old one"
-                             " hasn't been used")
-
     def access_assign(self, ast):
-        """
-        There are a couple of different ways that access assigns can work. One
-        thing it's used to do is to add IP addresses to networks. The other way
-        it's used is to add services to things. Services may have notes after
-        them in parentheses. Services can either be added to a specific network
-        or all networks. If it's all networks, the entity will be 'all'.
-        """
-
         # Top of stack is value, rest is entity -> property
         value = self.stack.pop()
         prop = self.stack.pop()
         entity = self.stack.pop()
-
-        if prop == 'service':
-            if entity != 'all':
-                entity = self.find_identifier(entity)
-
-            self.latest.add_service(entity, value, self.new_note)
-            # Destroy the note now
-            self.new_note = None
-
-            return
-
-        # Aren't adding a service so continue as usual
         entity = self.find_identifier(entity)
 
         if type(entity) is Network:
