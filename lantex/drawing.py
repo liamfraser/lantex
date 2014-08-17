@@ -41,6 +41,7 @@ class Font(object):
 class DrawEnv(object):
     def __init__(self, dwg, font, colors, x, y):
         self.dwg = dwg
+        self.dwg_g = None
         self.font = font
         self.colors = colors
 

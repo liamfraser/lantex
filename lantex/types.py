@@ -96,6 +96,7 @@ class Drawable(object):
         # Create a group for the object
         g = env.dwg.add(env.dwg.g(id='{0}-{1}'.format(self.__class__.__name__, 
                                                       self.identifier)))
+        env.dwg_g = g
 
         # Draw the outside rectangle
         x, y = env.x, env.y
@@ -527,9 +528,6 @@ class AccessPoint(Addressable, Ports, Drawable):
         self._network_ssidmap = None
         self.properties.append('network_ssidmap')
 
-    def __drawinit__(self):
-        pass
-
     @property
     def network_ssidmap(self):
         return self._network_ssidmap
@@ -552,6 +550,58 @@ class AccessPoint(Addressable, Ports, Drawable):
             else:
                 raise ValueError("Network {0} already exists in network ssidmap: "
                                  "{1}".format(network, self._network_ssidmap))
+
+    def __drawinit__(self):
+        self.drawing['antenna_width_ratio'] = 0.05
+        self.drawing['antenna_height_ratio'] = 2
+
+    def calc_size(self, env):
+        w, h = self.calc_size_base(env)
+
+        """
+        We now have a base rectangle calculated but want to add two extra
+        rectangles on the top to represent antennas. Width will stay the same
+        though.
+        """
+        old_h = h
+        h = old_h * self.drawing['antenna_height_ratio']
+        self.drawing['h_with_ant'] = h
+
+        ant_w = self.drawing['w'] * self.drawing['antenna_width_ratio']
+        self.drawing['ant_w'] = ant_w
+
+        # Increment the starting point so we have enough space for the antennas
+        h_diff = h - old_h
+        self.drawing['h_diff'] = h_diff
+        env.y += h_diff
+        self.drawing['ant_h'] = h_diff
+
+        return w, h
+
+    def draw(self, env):
+        self.draw_base(env)
+
+        # Fetch the drawing group from the environment
+        g = env.dwg_g
+
+        # Where we want to start our antennas is higher than where the base
+        # rect was drawn
+        ant_starty = env.y - self.drawing['h_diff']
+
+        # The antennas will start at 1 * width ratio and
+        # width - 2 * width ratio
+        col = env.colors['bg']['base02'].rgb
+        ant_startx = env.x + self.drawing['ant_w']
+        g.add(env.dwg.rect(insert=(ant_startx, ant_starty),
+                           size=(self.drawing['ant_w'], self.drawing['ant_h']),
+                           fill=col,
+                           stroke=col))
+
+        ant_startx = env.x + self.drawing['w'] - (2 * self.drawing['ant_w'])
+        g.add(env.dwg.rect(insert=(ant_startx, ant_starty),
+                           size=(self.drawing['ant_w'], self.drawing['ant_h']),
+                           fill=col,
+                           stroke=col))
 
 class Network(Addressable):
     def __init__(self):
